@@ -7,8 +7,9 @@ A basic lambda calculus compiler.
 This project uses [bear](https://github.com/rizsotto/bear) to maintain dependencies.
 
 ```bash
-git clone https://github.com/hteng2/lambda-compiler.git
-bear -- make
+> git clone https://github.com/hteng2/lambda-compiler.git
+> bear -- make
+> make clean
 ```
 
 ## Overview
