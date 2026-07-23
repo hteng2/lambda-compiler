@@ -1,0 +1,6 @@
+(\cond.\body.\x0.
+	(\fn.\x.fn fn x) (\self.\x.
+		(cond x) (\_. self self (body x)) (\_. x) ~
+	) x0
+)
+
