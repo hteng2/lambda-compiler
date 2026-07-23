@@ -8,6 +8,7 @@ typedef enum {
   TOKEN_LAMBDA,
   TOKEN_DOT,
   TOKEN_UNIT,
+  TOKEN_AT,
   TOKEN_LPAREN,
   TOKEN_RPAREN,
   TOKEN_INT,

@@ -142,6 +142,9 @@ Status NextToken(Lexer *lexer, Token *t, Diagnostic *d) {
   case '.':
     *t = (Token){.type = TOKEN_DOT, .val = {0}, .loc = loc};
     return OK;
+  case '@':
+    *t = (Token){.type = TOKEN_AT, .val = {0}, .loc = loc};
+    return OK;
   case '(':
     *t = (Token){.type = TOKEN_LPAREN, .val = {0}, .loc = loc};
     return OK;

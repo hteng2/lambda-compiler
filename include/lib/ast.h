@@ -14,12 +14,22 @@ typedef enum {
 
 typedef enum {
   BIOP_NONE,
+
   BIOP_APPLY,
+
   BIOP_ADD,
   BIOP_SUB,
   BIOP_MUL,
   BIOP_DIV,
   BIOP_MOD,
+
+  BIOP_EQ,
+  BIOP_GT,
+  BIOP_LT,
+
+  BIOP_AND,
+  BIOP_OR,
+  BIOP_XOR,
 } BiOpType;
 
 typedef struct {
@@ -28,7 +38,7 @@ typedef struct {
   void *right;
 } BiOp;
 
-typedef enum { UNOP_NONE, UNOP_NEG } UnOpType;
+typedef enum { UNOP_NONE, UNOP_NEG, UNOP_NOT } UnOpType;
 
 typedef struct {
   UnOpType type;
@@ -37,6 +47,7 @@ typedef struct {
 
 typedef struct {
   char *param;
+  char *self;
   void *body;
 } AstLambda;
 

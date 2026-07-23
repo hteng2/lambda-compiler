@@ -92,6 +92,20 @@ Ir1 *srLambda(SymResolver *analyzer, Ast *ast, Hashset *closure,
   }
   analyzer->symCnt++;
 
+  char *self = ast->val.lambda.self;
+  bool hasSelf = self != NULL;
+  size_t si = 0;
+  if (hasSelf) {
+    si = analyzer->symCnt;
+    s = HashtableAdd(analyzer->symbols, self, (void *)si);
+    if (s == ERR) {
+      *d = (Diagnostic){
+          .loc = {0}, .msg = "out of memory", .src = analyzer->srcName};
+      return NULL;
+    }
+    analyzer->symCnt++;
+  }
+
   Hashset *innerClosure = HashsetCreate(1, MAXLOAD, &szHash, &szEq);
   if (innerClosure == NULL) {
     *d = (Diagnostic){
@@ -115,6 +129,10 @@ Ir1 *srLambda(SymResolver *analyzer, Ast *ast, Hashset *closure,
 
   HashsetRemove(closure, (void *)pi, NULL);
   HashtableRemove(analyzer->symbols, param, NULL);
+  if (hasSelf) {
+    HashsetRemove(closure, (void *)si, NULL);
+    HashtableRemove(analyzer->symbols, self, NULL);
+  }
 
   Ir1 *newLambda = malloc(sizeof(Ir1));
   if (newLambda == NULL) {
@@ -125,10 +143,13 @@ Ir1 *srLambda(SymResolver *analyzer, Ast *ast, Hashset *closure,
     return NULL;
   }
 
-  *newLambda =
-      (Ir1){.type = NODE_LAMBDA,
-            .val.lambda = {.param = pi, .body = newBody, .closure = closure},
-            .loc = ast->loc};
+  *newLambda = (Ir1){.type = NODE_LAMBDA,
+                     .val.lambda = {.param = pi,
+                                    .hasSelf = hasSelf,
+                                    .self = si,
+                                    .body = newBody,
+                                    .closure = closure},
+                     .loc = ast->loc};
 
   return newLambda;
 }

@@ -9,6 +9,10 @@
 
 typedef struct {
   size_t param;
+
+  bool hasSelf;
+  size_t self;
+
   void *body;
   Hashset *closure;
 } Ir1Lambda;

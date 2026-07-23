@@ -41,6 +41,9 @@ void printToken(Token t) {
   case TOKEN_DOT:
     printf("DOT\n");
     return;
+  case TOKEN_AT:
+    printf("AT\n");
+    return;
   case TOKEN_UNIT:
     printf("UNIT\n");
     return;
@@ -67,9 +70,11 @@ void botToStr(BiOpType bot, char *s, size_t len) {
   case BIOP_NONE:
     strncpy(s, "none", len);
     break;
+
   case BIOP_APPLY:
     strncpy(s, "apply", len);
     break;
+
   case BIOP_ADD:
     strncpy(s, "add", len);
     break;
@@ -85,6 +90,26 @@ void botToStr(BiOpType bot, char *s, size_t len) {
   case BIOP_MOD:
     strncpy(s, "mod", len);
     break;
+
+  case BIOP_EQ:
+    strncpy(s, "eq", len);
+    break;
+  case BIOP_GT:
+    strncpy(s, "gt", len);
+    break;
+  case BIOP_LT:
+    strncpy(s, "lt", len);
+    break;
+
+  case BIOP_AND:
+    strncpy(s, "and", len);
+    break;
+  case BIOP_OR:
+    strncpy(s, "or", len);
+    break;
+  case BIOP_XOR:
+    strncpy(s, "xor", len);
+    break;
   }
 }
 
@@ -95,6 +120,9 @@ void uotToStr(UnOpType uot, char *s, size_t len) {
     break;
   case UNOP_NEG:
     strncpy(s, "neg", len);
+    break;
+  case UNOP_NOT:
+    strncpy(s, "not", len);
     break;
   }
 }
@@ -112,7 +140,11 @@ void printAst(Ast *ast, uint8_t lvl) {
 
   switch (ast->type) {
   case NODE_LAMBDA:
-    printf("lambda %s\n", ast->val.lambda.param);
+    printf("lambda %s", ast->val.lambda.param);
+    if (ast->val.lambda.self != NULL) {
+      printf(" %s", ast->val.lambda.self);
+    }
+    printf("\n");
     printAst(ast->val.lambda.body, lvl + 1);
     return;
 
@@ -160,7 +192,11 @@ void printIr1(Ir1 *ir1, uint8_t lvl) {
 
   switch (ir1->type) {
   case NODE_LAMBDA:
-    printf("lambda %ld: ", ir1->val.lambda.param);
+    printf("lambda %ld", ir1->val.lambda.param);
+    if (ir1->val.lambda.hasSelf) {
+      printf(" %ld", ir1->val.lambda.self);
+    }
+    printf(": ");
     HashsetIter(ir1->val.lambda.closure, &printClosureSym);
     printf("\n");
     printIr1(ir1->val.lambda.body, lvl + 1);

@@ -22,8 +22,8 @@ The only object in this language is the expression. An expression takes many for
 4. A lambda expression: `\x.x+1`
 5. An application: `(\x.x+1) 2`
 
-To resolve types and recursion, there is the self-referential lambda expression:
+To resolve types and recursion, lambda expressions can reference themselves via `@`:
 
 ```
-(\x : s . (x=0) 1 (s (x-1)))
+(\x @self. (x=0) 1 (self (x-1)))
 ```

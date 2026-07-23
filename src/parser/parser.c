@@ -1,3 +1,4 @@
+#include "lib/ast.h"
 #include "lib/token.h"
 #include "parser/parser.h"
 #include <stdint.h>
@@ -23,6 +24,18 @@ BiOpType toBot(char c) {
     return BIOP_DIV;
   case '%':
     return BIOP_MOD;
+  case '=':
+    return BIOP_EQ;
+  case '>':
+    return BIOP_GT;
+  case '<':
+    return BIOP_LT;
+  case '&':
+    return BIOP_AND;
+  case '|':
+    return BIOP_OR;
+  case '^':
+    return BIOP_XOR;
   default:
     return BIOP_NONE;
   }
@@ -30,17 +43,40 @@ BiOpType toBot(char c) {
 
 Bp infixBp(char c) {
   switch (c) {
+  case '|':
+    return (Bp){.left = 1, .right = 2};
+
+  case '&':
+  case '^':
+    return (Bp){.left = 3, .right = 4};
+
+  case '=':
+  case '>':
+  case '<':
+    return (Bp){.left = 5, .right = 6};
+
   case '+':
   case '-':
-    return (Bp){.left = 1, .right = 2};
+    return (Bp){.left = 7, .right = 8};
 
   case '*':
   case '/':
   case '%':
-    return (Bp){.left = 3, .right = 4};
+    return (Bp){.left = 9, .right = 10};
 
   default:
     return (Bp){0};
+  }
+}
+
+UnOpType toUot(char c) {
+  switch (c) {
+  case '-':
+    return UNOP_NEG;
+  case '!':
+    return UNOP_NOT;
+  default:
+    return UNOP_NONE;
   }
 }
 
@@ -90,8 +126,29 @@ Ast *parseLambda(Parser *parser, Diagnostic *d, Pt start) {
     return NULL;
   }
 
+  Token next;
+  char *selfRef = NULL;
   Token dot;
-  s = getToken(parser, &dot, d);
+  s = getToken(parser, &next, d);
+  if (s == ERR)
+    return NULL;
+  if (next.type == TOKEN_AT) {
+    Token name;
+    s = getToken(parser, &name, d);
+    if (s == ERR)
+      return NULL;
+    if (name.type != TOKEN_SYM) {
+      *d = (Diagnostic){
+          .loc = param.loc, .msg = "expected symbol", .src = parser->srcName};
+      return NULL;
+    }
+
+    selfRef = name.val.s;
+    s = getToken(parser, &dot, d);
+  } else {
+    dot = next;
+  }
+
   if (s == ERR)
     return NULL;
   if (dot.type != TOKEN_DOT) {
@@ -117,6 +174,7 @@ Ast *parseLambda(Parser *parser, Diagnostic *d, Pt start) {
           (AstLambda){
               .param = param.val.s,
               .body = expr,
+              .self = selfRef,
           },
       .loc =
           (Loc){
@@ -129,34 +187,33 @@ Ast *parseLambda(Parser *parser, Diagnostic *d, Pt start) {
 }
 
 Ast *parsePrefix(Parser *parser, char c, Loc loc, Diagnostic *d) {
-  switch (c) {
-  case '-': {
-    Ast *expr = parseLeft(parser, PREFIX_BP, d);
+  UnOpType uot = toUot(c);
 
-    Ast *left = malloc(sizeof(Ast));
-    if (left == NULL) {
-      *d = (Diagnostic){
-          .loc = {0}, .msg = "out of memory", .src = parser->srcName};
-      return NULL;
-    }
-
-    *left = (Ast){
-        .type = NODE_UNOP,
-        .val.unop =
-            (UnOp){
-                .type = UNOP_NEG,
-                .child = expr,
-            },
-        .loc = (Loc){.start = loc.start, .end = expr->loc.end},
-    };
-    return left;
-  }
-
-  default:
+  if (uot == UNOP_NONE) {
     *d = (Diagnostic){
         .loc = loc, .msg = "expected prefix operator", .src = parser->srcName};
     return NULL;
   }
+
+  Ast *expr = parseLeft(parser, PREFIX_BP, d);
+
+  Ast *left = malloc(sizeof(Ast));
+  if (left == NULL) {
+    *d = (Diagnostic){
+        .loc = {0}, .msg = "out of memory", .src = parser->srcName};
+    return NULL;
+  }
+
+  *left = (Ast){
+      .type = NODE_UNOP,
+      .val.unop =
+          (UnOp){
+              .type = uot,
+              .child = expr,
+          },
+      .loc = (Loc){.start = loc.start, .end = expr->loc.end},
+  };
+  return left;
 }
 
 Ast *parseLeft(Parser *parser, uint8_t minBp, Diagnostic *d) {
@@ -185,6 +242,11 @@ Ast *parseLeft(Parser *parser, uint8_t minBp, Diagnostic *d) {
   case TOKEN_DOT:
     *d = (Diagnostic){
         .loc = t.loc, .msg = "unexpected dot operator", .src = parser->srcName};
+    return NULL;
+
+  case TOKEN_AT:
+    *d = (Diagnostic){
+        .loc = t.loc, .msg = "unexpected at operator", .src = parser->srcName};
     return NULL;
 
   case TOKEN_UNIT:
@@ -279,7 +341,8 @@ Ast *parseAdvance(Parser *parser, uint8_t minBp, Ast *left, Diagnostic *d) {
       return left;
     }
 
-    case TOKEN_DOT: {
+    case TOKEN_DOT:
+    case TOKEN_AT: {
       *d = (Diagnostic){.loc = t.loc,
                         .msg = "unexpected dot operator",
                         .src = parser->srcName};
